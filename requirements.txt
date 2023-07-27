@@ -12,3 +12,4 @@ seaborn
 matplotlib
 pandas
 tabulate
+tiktoken
