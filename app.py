@@ -77,28 +77,17 @@ def main():
 
     button_clicked_1 = st.button("gpt-4")
     button_clicked_2 = st.button("gpt-3.5-turbo")
-    button_clicked_3 = st.button("text-davinci-003")
+    #button_clicked_3 = st.button("text-davinci-003")
     
     # extract the text
     if button_clicked_1:
-        text = ""
-        for pdf in pdf_docs:
-            pdf_reader = PdfReader(pdf)
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-                # split into chunks
-                text_splitter = CharacterTextSplitter(
-                separator="\n",
-                chunk_size=1000,
-                chunk_overlap=200,
-                length_function=len
-                )
-                chunks = text_splitter.split_text(text)
+        raw_text = get_pdf_text(pdf_docs)
 
-        # create embeddings
-        embeddings = OpenAIEmbeddings()
-        #vectorstore = Chroma.from_documents(chunks, embeddings)
-        knowledge_base = FAISS.from_texts(texts=chunks, embedding=embeddings)
+        # get the text chunks
+        text_chunks = get_text_chunks(raw_text)
+
+        # create vector store
+        knowledge_base = get_vectorstore(text_chunks)
 
             
         docs = knowledge_base.similarity_search(st.session_state.input)
@@ -113,27 +102,17 @@ def main():
           st.session_state.chat_history.append((st.session_state.input, response["answer"]))
           
     elif button_clicked_2:
-        text = ""
-        for pdf in pdf_docs:
-            pdf_reader = PdfReader(pdf)
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-                # split into chunks
-                text_splitter = CharacterTextSplitter(
-                separator="\n",
-                chunk_size=1000,
-                chunk_overlap=200,
-                length_function=len
-                )
-                chunks = text_splitter.split_text(text)
+        raw_text = get_pdf_text(pdf_docs)
 
-        # create embeddings
-        embeddings = OpenAIEmbeddings()
-        #vectorstore = Chroma.from_documents(chunks, embeddings)
-        knowledge_base = FAISS.from_texts(texts=chunks, embedding=embeddings)
+        # get the text chunks
+        text_chunks = get_text_chunks(raw_text)
+
+        # create vector store
+        knowledge_base = get_vectorstore(text_chunks)
 
             
         docs = knowledge_base.similarity_search(st.session_state.input)
+
         qa = ConversationalRetrievalChain.from_llm(
             ChatOpenAI(temperature=0.1, model="gpt-3.5-turbo"),
             knowledge_base.as_retriever()
@@ -142,35 +121,6 @@ def main():
           response = qa({"question": st.session_state.input, "chat_history": st.session_state.chat_history})
           st.session_state.chat_history.append((st.session_state.input, response["answer"]))
           
-    elif button_clicked_3:
-        text = ""
-        for pdf in pdf_docs:
-            pdf_reader = PdfReader(pdf)
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-                # split into chunks
-                text_splitter = CharacterTextSplitter(
-                separator="\n",
-                chunk_size=1000,
-                chunk_overlap=200,
-                length_function=len
-                )
-                chunks = text_splitter.split_text(text)
-
-        # create embeddings
-        embeddings = OpenAIEmbeddings()
-        #vectorstore = Chroma.from_documents(chunks, embeddings)
-        knowledge_base = FAISS.from_texts(texts=chunks, embedding=embeddings)
-
-            
-        docs = knowledge_base.similarity_search(st.session_state.input)
-        qa = ConversationalRetrievalChain.from_llm(
-            ChatOpenAI(temperature=0.1, model="text-davinci-003"),
-            knowledge_base.as_retriever()
-        )
-        with get_openai_callback() as cb:
-          response = qa({"question": st.session_state.input, "chat_history": st.session_state.chat_history})
-          st.session_state.chat_history.append((st.session_state.input, response["answer"]))
 
     # Display chat history
     for message in st.session_state.chat_history[::-1]:
